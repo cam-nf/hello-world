@@ -1,3 +1,62 @@
+image:
+  file: .gitpod.Dockerfile
+
+ports:
+- port: 9000
+  onOpen: ignore
+- port: 9100
+  onOpen: ignore
+- port: 8086-8087
+  onOpen: ignore
+- port: 4840-4841
+  onOpen: ignore
+
 tasks:
-  - init: .gitpod.yml
-    command: 'echo "TODO: Replace with command to start project"'
+- command: |
+    clear
+    export DOCKER_HOST=tcp://localhost:8086
+    echo "once the setup is done, try running $(tput setaf 2)docker ps"
+    echo
+- command: |
+    clear
+    gp await-port 9000 &&
+    remote=$(gp url 9000)
+    gp await-port 9100 &&
+    remote2=$(gp url 9100)
+    echo
+    echo "Inlets server is running on $(gp url 9000)."
+    echo "Chisel server is running on $(gp url 9100)."
+    echo "$(tput setaf 7)Connect your local daemon by running"
+    echo
+    echo "$(tput setaf 2)inlets client --remote=${remote/https/wss} \\"
+    echo "$(tput setaf 2)  --token $(cat /tmp/inlets-token) \\"
+    echo "$(tput setaf 2)  --upstream=http://127.0.0.1:8086$(tput sgr0)"
+    echo
+    echo "on your local machine." 
+    echo "$(tput setaf 2)chisel client --remote=${remote2/https/wss} \\"
+    echo
+    echo "In the example above, $(tput setaf 3)your localdaemon must listen on port 8086.$(tput sgr0)"
+    echo
+    echo "Chisel server is running on $(gp url 9100)."
+    echo 
+    echo "Chisel Example with port 4840 - OPCUA mapping"
+    echo "Start Chisel server in gitpod with: $(tput setaf 2)chisel server --port 9100 --reverse$(tput sgr0)"
+    echo "Chisel server is running on $(gp url 9100)."
+    echo
+    echo "Gitpod OPCUA Client"
+    echo "Start: chisel client for remote pc opcua server with e.g. port 4840 (OPCUA) and map to server port 4841 with Powershell cmd"
+    echo "$(tput setaf 2).\chisel client $(gp url 9100) R:4841:4840 $(tput sgr0)"  
+    echo "Start: chisel client on gitpod with Terminal cmd"
+    echo "$(tput setaf 2) chisel client $(gp url 9100) R:4840:4841 $(tput sgr0)"  
+    echo
+    echo "Gitpod OPCUA Server"
+    echo "Start: chisel server for remote pc with e.g. port 4840 (OPCUA) and map to server port 4841 with Powershell cmd"
+    echo "$(tput setaf 2).\chisel client $(gp url 9100) 4840:4841 $(tput sgr0)" 
+    echo "Start: chisel server on gitpod with opcua server Terminal cmd"  
+    echo "$(tput setaf 2) chisel client $(gp url 9100) 4841:4840 $(tput sgr0)"
+  openMode: split-right
+- command: |
+    head -c 16 /dev/urandom | shasum | cut -d" " -f1 > /tmp/inlets-token
+    inlets server --control-port=9000 --port 8086 --token="$(cat /tmp/inlets-token)"
+- command: |
+    chisel server --port 9100 --reverse
